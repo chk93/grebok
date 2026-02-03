@@ -93,6 +93,7 @@
             justify-content: center;
             gap: 30px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
         
         .key {
@@ -102,6 +103,7 @@
             border-radius: 8px;
             font-weight: bold;
             box-shadow: 0 4px 0 #111;
+            margin: 5px;
         }
         
         .start-button {
@@ -126,33 +128,6 @@
         .start-button:active {
             transform: translateY(5px);
             box-shadow: 0 3px 0 #8B0000;
-        }
-        
-        .platform {
-            position: absolute;
-            background-color: #8B4513;
-            border: 3px solid #654321;
-            border-radius: 10px;
-        }
-        
-        .player {
-            position: absolute;
-            z-index: 10;
-        }
-        
-        .mario {
-            position: absolute;
-            z-index: 5;
-        }
-        
-        .bird {
-            position: absolute;
-            z-index: 3;
-        }
-        
-        .coin {
-            position: absolute;
-            z-index: 8;
         }
         
         .game-over {
@@ -229,8 +204,14 @@
         <p>Наблюдайте за птичками с микрофонами-петличками!</p>
         
         <div class="controls">
-            <div><span class="key">←</span> и <span class="key">→</span> - Движение влево/вправо</div>
-            <div><span class="key">ПРОБЕЛ</span> или <span class="key">↑</span> - Прыжок</div>
+            <div>
+                <span class="key">←</span> и <span class="key">→</span> - Движение влево/вправо<br>
+                <span class="key">ПРОБЕЛ</span> или <span class="key">↑</span> - Прыжок
+            </div>
+            <div>
+                <span class="key">P</span> - Пауза<br>
+                <span class="key">R</span> - Рестарт
+            </div>
         </div>
     </div>
     
@@ -765,34 +746,56 @@
             }
         }
         
-        // Управление игроком
+        // Управление игроком - исправленная версия
         const keys = {};
+        const keyState = {}; // Для отслеживания одиночных нажатий
         
         document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
+            const key = e.key.toLowerCase();
             
-            if (e.key === ' ' || e.key === 'ArrowUp') {
-                if (player.isOnGround && gameRunning) {
+            // Предотвращаем повторные срабатывания при зажатой клавише
+            if (!keys[key]) {
+                keys[key] = true;
+                keyState[key] = true; // Для одиночных нажатий
+                
+                // Прыжок (пробел или стрелка вверх)
+                if ((key === ' ' || key === 'arrowup') && player.isOnGround && gameRunning) {
                     player.velocityY = player.jumpPower;
                     player.isJumping = true;
                     player.isOnGround = false;
+                    // Сбрасываем состояние клавиши прыжка
+                    keyState[key] = false;
+                }
+                
+                // Пауза (клавиша P)
+                if (key === 'p' && gameRunning) {
+                    togglePause();
+                }
+                
+                // Рестарт (клавиша R)
+                if (key === 'r') {
+                    startGame();
                 }
             }
         });
         
         document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
+            const key = e.key.toLowerCase();
+            keys[key] = false;
+            keyState[key] = false;
         });
         
-        // Обработка непрерывного нажатия клавиш
+        // Обработка непрерывного нажатия клавиш (только для движения)
         function handleInput() {
             player.velocityX = 0;
             
-            if (keys['ArrowLeft'] || keys['a'] || keys['ф']) {
+            // Движение влево
+            if (keys['arrowleft'] || keys['a'] || keys['ф']) {
                 player.velocityX = -player.speed;
             }
             
-            if (keys['ArrowRight'] || keys['d'] || keys['в']) {
+            // Движение вправо
+            if (keys['arrowright'] || keys['d'] || keys['в']) {
                 player.velocityX = player.speed;
             }
         }
@@ -846,7 +849,7 @@
             // Запуск игры
             gameRunning = true;
             gameOverScreen.style.display = 'none';
-            startButton.textContent = "ПАУЗА";
+            startButton.textContent = "ПАУЗА (P)";
             
             lastTime = performance.now();
             requestAnimationFrame(gameLoop);
@@ -856,7 +859,7 @@
         function togglePause() {
             if (!gameRunning && score > 0) {
                 gameRunning = true;
-                startButton.textContent = "ПАУЗА";
+                startButton.textContent = "ПАУЗА (P)";
                 lastTime = performance.now();
                 requestAnimationFrame(gameLoop);
             } else if (gameRunning) {
@@ -895,6 +898,8 @@
         console.log("Управление в игре:");
         console.log("Стрелки влево/вправо - движение");
         console.log("Пробел или стрелка вверх - прыжок");
+        console.log("P - пауза");
+        console.log("R - рестарт");
         console.log("Цель: прыгать на Марио и собирать монетки!");
     </script>
 </body>

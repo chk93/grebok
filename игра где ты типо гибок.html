@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Грибок прыгает на Марио!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            max-width: 100%;
+            border: 5px solid #8B4513;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(to bottom, #1E90FF, #98FB98);
+        }
+        
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #8B0000;
+            border-radius: 10px;
+            width: 800px;
+            max-width: 100%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            color: #FFD700;
+            text-shadow: 3px 3px 0 #8B0000, 5px 5px 0 rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.4rem;
+            margin-top: 10px;
+        }
+        
+        .score, .lives, .level {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 800px;
+            text-align: center;
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+        
+        .instructions h2 {
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+        
+        .key {
+            background-color: #333;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #111;
+        }
+        
+        .start-button {
+            background-color: #FF4500;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 25px;
+            font-weight: bold;
+            box-shadow: 0 8px 0 #8B0000;
+            transition: all 0.1s;
+        }
+        
+        .start-button:hover {
+            background-color: #FF6347;
+            transform: translateY(-3px);
+        }
+        
+        .start-button:active {
+            transform: translateY(5px);
+            box-shadow: 0 3px 0 #8B0000;
+        }
+        
+        .platform {
+            position: absolute;
+            background-color: #8B4513;
+            border: 3px solid #654321;
+            border-radius: 10px;
+        }
+        
+        .player {
+            position: absolute;
+            z-index: 10;
+        }
+        
+        .mario {
+            position: absolute;
+            z-index: 5;
+        }
+        
+        .bird {
+            position: absolute;
+            z-index: 3;
+        }
+        
+        .coin {
+            position: absolute;
+            z-index: 8;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        
+        .game-over h2 {
+            font-size: 4rem;
+            color: #FF0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #FF4500;
+        }
+        
+        .game-over p {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #FFD700;
+        }
+        
+        @media (max-width: 850px) {
+            .game-container, .game-header {
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .game-info {
+                font-size: 1.1rem;
+            }
+            
+            .instructions {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <h1>ГРИБОК ПРЫГАЕТ НА МАРИО!</h1>
+        <div class="game-info">
+            <div class="score">Очки: <span id="score">0</span></div>
+            <div class="lives">Жизни: <span id="lives">3</span></div>
+            <div class="level">Уровень: <span id="level">1</span></div>
+        </div>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="game-canvas" width="800" height="500"></canvas>
+        <div class="game-over" id="game-over">
+            <h2>ИГРА ОКОНЧЕНА!</h2>
+            <p>Ваш счет: <span id="final-score">0</span></p>
+            <button class="start-button" id="restart-button">Играть снова</button>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2>Как играть</h2>
+        <p>Вы играете за грибка, который должен прыгать на Марио!</p>
+        <p>Каждый успешный прыжок на Марио приносит 100 очков.</p>
+        <p>Собирайте монетки для бонусных очков.</p>
+        <p>Наблюдайте за птичками с микрофонами-петличками!</p>
+        
+        <div class="controls">
+            <div><span class="key">←</span> и <span class="key">→</span> - Движение влево/вправо</div>
+            <div><span class="key">ПРОБЕЛ</span> или <span class="key">↑</span> - Прыжок</div>
+        </div>
+    </div>
+    
+    <button class="start-button" id="start-button">НАЧАТЬ ИГРУ</button>
+
+    <script>
+        // Оптимизация: используем один canvas для всей отрисовки
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Элементы игры
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const levelElement = document.getElementById('level');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreElement = document.getElementById('final-score');
+        
+        // Игровые переменные
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let gameRunning = false;
+        let platforms = [];
+        let coins = [];
+        let birds = [];
+        let lastTime = 0;
+        
+        // Размеры игры
+        const gameWidth = 800;
+        const gameHeight = 500;
+        
+        // Игровые объекты
+        const player = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 40,
+            velocityX: 0,
+            velocityY: 0,
+            gravity: 0.5,
+            jumpPower: -12,
+            speed: 5,
+            isJumping: false,
+            isOnGround: false
+        };
+        
+        const mario = {
+            x: 600,
+            y: 300,
+            width: 40,
+            height: 60,
+            direction: -1,
+            speed: 2,
+            jumpTimer: 0,
+            jumpInterval: 120
+        };
+        
+        // Предзагруженные спрайты
+        let mushroomSprite = null;
+        let marioSprite = null;
+        let birdSprite = null;
+        let coinSprite = null;
+        
+        // Создание спрайтов (один раз при загрузке)
+        function createSprites() {
+            // Спрайт грибка
+            const mushroomCanvas = document.createElement('canvas');
+            mushroomCanvas.width = 40;
+            mushroomCanvas.height = 40;
+            const mCtx = mushroomCanvas.getContext('2d');
+            
+            mCtx.fillStyle = '#E52521';
+            mCtx.beginPath();
+            mCtx.ellipse(20, 12, 18, 10, 0, 0, Math.PI * 2);
+            mCtx.fill();
+            
+            mCtx.fillStyle = '#E52521';
+            mCtx.fillRect(2, 12, 36, 8);
+            
+            mCtx.fillStyle = '#FFFFFF';
+            mCtx.fillRect(12, 20, 16, 15);
+            
+            mCtx.fillStyle = '#FFFFFF';
+            mCtx.beginPath();
+            mCtx.ellipse(20, 8, 6, 5, 0, 0, Math.PI * 2);
+            mCtx.fill();
+            
+            mCtx.beginPath();
+            mCtx.ellipse(8, 10, 4, 3, 0, 0, Math.PI * 2);
+            mCtx.fill();
+            
+            mCtx.beginPath();
+            mCtx.ellipse(32, 10, 4, 3, 0, 0, Math.PI * 2);
+            mCtx.fill();
+            
+            mCtx.fillStyle = '#FFFFFF';
+            mCtx.beginPath();
+            mCtx.ellipse(20, 34, 8, 4, 0, 0, Math.PI * 2);
+            mCtx.fill();
+            
+            mushroomSprite = mushroomCanvas;
+            
+            // Спрайт Марио
+            const marioCanvas = document.createElement('canvas');
+            marioCanvas.width = 40;
+            marioCanvas.height = 60;
+            const maCtx = marioCanvas.getContext('2d');
+            
+            maCtx.fillStyle = '#E52521';
+            maCtx.fillRect(10, 5, 20, 10);
+            maCtx.beginPath();
+            maCtx.ellipse(20, 5, 10, 8, 0, 0, Math.PI * 2);
+            maCtx.fill();
+            
+            maCtx.fillStyle = '#F8B88F';
+            maCtx.fillRect(10, 15, 20, 15);
+            
+            maCtx.fillStyle = '#8B4513';
+            maCtx.fillRect(10, 15, 20, 5);
+            
+            maCtx.fillStyle = '#E52521';
+            maCtx.fillRect(10, 30, 20, 20);
+            
+            maCtx.fillStyle = '#F8B88F';
+            maCtx.fillRect(5, 30, 5, 15);
+            maCtx.fillRect(30, 30, 5, 15);
+            
+            maCtx.fillStyle = '#1E58C8';
+            maCtx.fillRect(10, 50, 8, 10);
+            maCtx.fillRect(22, 50, 8, 10);
+            
+            maCtx.fillStyle = '#000000';
+            maCtx.fillRect(15, 20, 3, 3);
+            maCtx.fillRect(22, 20, 3, 3);
+            
+            maCtx.fillStyle = '#000000';
+            maCtx.fillRect(12, 25, 8, 2);
+            maCtx.fillRect(20, 25, 8, 2);
+            
+            marioSprite = marioCanvas;
+            
+            // Спрайт птички
+            const birdCanvas = document.createElement('canvas');
+            birdCanvas.width = 40;
+            birdCanvas.height = 30;
+            const bCtx = birdCanvas.getContext('2d');
+            
+            bCtx.fillStyle = '#FF69B4';
+            bCtx.beginPath();
+            bCtx.ellipse(20, 15, 15, 10, 0, 0, Math.PI * 2);
+            bCtx.fill();
+            
+            bCtx.fillStyle = '#FF69B4';
+            bCtx.beginPath();
+            bCtx.arc(30, 10, 8, 0, Math.PI * 2);
+            bCtx.fill();
+            
+            bCtx.fillStyle = '#000000';
+            bCtx.beginPath();
+            bCtx.arc(32, 8, 2, 0, Math.PI * 2);
+            bCtx.fill();
+            
+            bCtx.fillStyle = '#FFA500';
+            bCtx.beginPath();
+            bCtx.moveTo(35, 10);
+            bCtx.lineTo(42, 10);
+            bCtx.lineTo(35, 14);
+            bCtx.closePath();
+            bCtx.fill();
+            
+            bCtx.fillStyle = '#FF1493';
+            bCtx.beginPath();
+            bCtx.ellipse(15, 15, 8, 5, Math.PI/4, 0, Math.PI * 2);
+            bCtx.fill();
+            
+            bCtx.fillStyle = '#000000';
+            bCtx.beginPath();
+            bCtx.arc(15, 18, 3, 0, Math.PI * 2);
+            bCtx.fill();
+            
+            bCtx.fillStyle = '#C0C0C0';
+            bCtx.beginPath();
+            bCtx.arc(15, 18, 2, 0, Math.PI * 2);
+            bCtx.fill();
+            
+            bCtx.strokeStyle = '#000000';
+            bCtx.lineWidth = 1;
+            bCtx.beginPath();
+            bCtx.moveTo(15, 18);
+            bCtx.lineTo(10, 22);
+            bCtx.stroke();
+            
+            birdSprite = birdCanvas;
+            
+            // Спрайт монетки
+            const coinCanvas = document.createElement('canvas');
+            coinCanvas.width = 20;
+            coinCanvas.height = 20;
+            const cCtx = coinCanvas.getContext('2d');
+            
+            const gradient = cCtx.createRadialGradient(10, 10, 0, 10, 10, 10);
+            gradient.addColorStop(0, '#FFD700');
+            gradient.addColorStop(1, '#FFA500');
+            cCtx.fillStyle = gradient;
+            cCtx.beginPath();
+            cCtx.arc(10, 10, 8, 0, Math.PI * 2);
+            cCtx.fill();
+            
+            cCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            cCtx.beginPath();
+            cCtx.arc(6, 6, 3, 0, Math.PI * 2);
+            cCtx.fill();
+            
+            coinSprite = coinCanvas;
+        }
+        
+        // Создание игровых объектов
+        function createPlatforms() {
+            platforms = [];
+            
+            // Основная платформа по всему низу
+            platforms.push({x: 0, y: gameHeight - 30, width: gameWidth, height: 30, type: 'ground'});
+            
+            // Небольшие платформы сверху с монетками
+            platforms.push({x: 100, y: 350, width: 120, height: 20, type: 'small'});
+            platforms.push({x: 300, y: 300, width: 120, height: 20, type: 'small'});
+            platforms.push({x: 500, y: 250, width: 120, height: 20, type: 'small'});
+            platforms.push({x: 200, y: 200, width: 120, height: 20, type: 'small'});
+            platforms.push({x: 400, y: 150, width: 120, height: 20, type: 'small'});
+            platforms.push({x: 600, y: 100, width: 120, height: 20, type: 'small'});
+            
+            if (level >= 2) {
+                platforms.push({x: 50, y: 100, width: 100, height: 15, type: 'small'});
+                platforms.push({x: 650, y: 180, width: 100, height: 15, type: 'small'});
+            }
+            
+            if (level >= 3) {
+                platforms.push({x: 150, y: 70, width: 100, height: 15, type: 'small'});
+                platforms.push({x: 550, y: 70, width: 100, height: 15, type: 'small'});
+            }
+        }
+        
+        function createCoins() {
+            coins = [];
+            
+            platforms.forEach(platform => {
+                if (platform.type === 'small' && Math.random() > 0.3) {
+                    const coinCount = Math.floor(Math.random() * 3) + 1;
+                    for (let i = 0; i < coinCount; i++) {
+                        coins.push({
+                            x: platform.x + 20 + i * 30,
+                            y: platform.y - 30,
+                            width: 20,
+                            height: 20,
+                            collected: false,
+                            rotation: 0
+                        });
+                    }
+                }
+            });
+        }
+        
+        function createBirds() {
+            birds = [];
+            
+            // Меньше птичек для оптимизации
+            for (let i = 0; i < 3; i++) {
+                birds.push({
+                    x: Math.random() * gameWidth,
+                    y: 80 + Math.random() * 150,
+                    width: 40,
+                    height: 30,
+                    speed: 0.5 + Math.random() * 0.5,
+                    direction: Math.random() > 0.5 ? 1 : -1,
+                    flapTimer: 0,
+                    flapSpeed: 5 + Math.random() * 10,
+                    flapOffset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        // Рендеринг игры (оптимизированный)
+        function render() {
+            // Очищаем canvas
+            ctx.clearRect(0, 0, gameWidth, gameHeight);
+            
+            // Рендерим платформы
+            platforms.forEach(platform => {
+                ctx.fillStyle = platform.type === 'ground' ? '#2E8B57' : '#8B4513';
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+                
+                // Для земли добавляем траву сверху
+                if (platform.type === 'ground') {
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(platform.x, platform.y, platform.width, 5);
+                }
+            });
+            
+            // Рендерим птичек
+            const now = Date.now();
+            birds.forEach(bird => {
+                // Анимация взмахов крыльев
+                const flapOffset = Math.sin(now / 200 + bird.flapOffset) * 5;
+                
+                ctx.drawImage(
+                    birdSprite, 
+                    bird.x, 
+                    bird.y + flapOffset,
+                    bird.width,
+                    bird.height
+                );
+            });
+            
+            // Рендерим монетки
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    // Вращение монеток
+                    coin.rotation += 0.1;
+                    
+                    ctx.save();
+                    ctx.translate(coin.x + coin.width/2, coin.y + coin.height/2);
+                    ctx.rotate(coin.rotation);
+                    
+                    ctx.drawImage(
+                        coinSprite,
+                        -coin.width/2,
+                        -coin.height/2,
+                        coin.width,
+                        coin.height
+                    );
+                    
+                    ctx.restore();
+                }
+            });
+            
+            // Рендерим Марио
+            ctx.drawImage(marioSprite, mario.x, mario.y, mario.width, mario.height);
+            
+            // Рендерим игрока (грибка)
+            ctx.drawImage(mushroomSprite, player.x, player.y, player.width, player.height);
+        }
+        
+        // Обновление игровой логики
+        function update() {
+            // Движение игрока
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+            
+            // Гравитация
+            player.velocityY += player.gravity;
+            
+            // Ограничение движения
+            if (player.x < 0) player.x = 0;
+            if (player.x > gameWidth - player.width) player.x = gameWidth - player.width;
+            
+            // Проверка падения в пропасть
+            if (player.y > gameHeight) {
+                player.y = gameHeight - 80;
+                player.x = 100;
+                player.velocityY = 0;
+                lives--;
+                livesElement.textContent = lives;
+                
+                if (lives <= 0) {
+                    endGame();
+                }
+            }
+            
+            // Проверка столкновения с платформами
+            player.isOnGround = false;
+            
+            for (let platform of platforms) {
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y + player.height > platform.y &&
+                    player.y + player.height < platform.y + platform.height + player.velocityY &&
+                    player.velocityY > 0) {
+                    
+                    player.y = platform.y - player.height;
+                    player.velocityY = 0;
+                    player.isOnGround = true;
+                    player.isJumping = false;
+                }
+            }
+            
+            // Обновление Марио
+            mario.jumpTimer++;
+            
+            if (mario.jumpTimer >= mario.jumpInterval) {
+                let marioOnGround = false;
+                for (let platform of platforms) {
+                    if (mario.x + mario.width > platform.x &&
+                        mario.x < platform.x + platform.width &&
+                        mario.y + mario.height >= platform.y - 2 &&
+                        mario.y + mario.height <= platform.y + 10) {
+                        
+                        marioOnGround = true;
+                        break;
+                    }
+                }
+                
+                if (marioOnGround && Math.random() > 0.7) {
+                    mario.y -= 15;
+                    mario.jumpTimer = 0;
+                }
+            }
+            
+            // Гравитация для Марио
+            let marioOnGround = false;
+            for (let platform of platforms) {
+                if (mario.x + mario.width > platform.x &&
+                    mario.x < platform.x + platform.width &&
+                    mario.y + mario.height >= platform.y - 2 &&
+                    mario.y + mario.height <= platform.y + 10) {
+                    
+                    mario.y = platform.y - mario.height;
+                    marioOnGround = true;
+                    break;
+                }
+            }
+            
+            if (!marioOnGround && mario.y < gameHeight - mario.height) {
+                mario.y += 3;
+            }
+            
+            // Движение Марио
+            let canMove = false;
+            
+            for (let platform of platforms) {
+                if (mario.y + mario.height >= platform.y - 2 &&
+                    mario.y + mario.height <= platform.y + 10) {
+                    
+                    const nextX = mario.x + (mario.speed * mario.direction);
+                    if (nextX + mario.width > platform.x && nextX < platform.x + platform.width) {
+                        canMove = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (canMove) {
+                mario.x += mario.speed * mario.direction;
+            } else {
+                mario.direction *= -1;
+                mario.x += mario.speed * mario.direction;
+            }
+            
+            if (mario.x < 0) {
+                mario.x = 0;
+                mario.direction *= -1;
+            }
+            if (mario.x + mario.width > gameWidth) {
+                mario.x = gameWidth - mario.width;
+                mario.direction *= -1;
+            }
+            
+            // Проверка прыжка на Марио
+            if (player.x < mario.x + mario.width &&
+                player.x + player.width > mario.x &&
+                player.y + player.height > mario.y &&
+                player.y < mario.y + mario.height &&
+                player.velocityY > 0 &&
+                player.y + player.height - player.velocityY <= mario.y) {
+                
+                player.velocityY = player.jumpPower * 0.8;
+                score += 100;
+                scoreElement.textContent = score;
+                
+                mario.y += 10;
+                setTimeout(() => {
+                    if (mario.y < gameHeight - mario.height) {
+                        mario.y -= 10;
+                    }
+                }, 200);
+            }
+            
+            // Проверка столкновения с Марио сбоку
+            if (player.x < mario.x + mario.width &&
+                player.x + player.width > mario.x &&
+                player.y < mario.y + mario.height &&
+                player.y + player.height > mario.y &&
+                !(player.y + player.height - player.velocityY <= mario.y && player.velocityY > 0)) {
+                
+                player.x -= 50;
+                player.velocityY = -8;
+                lives--;
+                livesElement.textContent = lives;
+                
+                if (lives <= 0) {
+                    endGame();
+                }
+            }
+            
+            // Проверка сбора монеток
+            for (let coin of coins) {
+                if (!coin.collected &&
+                    player.x < coin.x + coin.width &&
+                    player.x + player.width > coin.x &&
+                    player.y < coin.y + coin.height &&
+                    player.y + player.height > coin.y) {
+                    
+                    coin.collected = true;
+                    score += 50;
+                    scoreElement.textContent = score;
+                }
+            }
+            
+            // Движение птичек (упрощенное для оптимизации)
+            const now = Date.now();
+            birds.forEach(bird => {
+                bird.x += bird.speed * bird.direction;
+                
+                if (bird.x <= 0 || bird.x + bird.width >= gameWidth) {
+                    bird.direction *= -1;
+                }
+            });
+            
+            // Проверка перехода на следующий уровень
+            if (score >= level * 500) {
+                level++;
+                levelElement.textContent = level;
+                mario.speed += 0.5;
+                createPlatforms();
+                createCoins();
+                createBirds();
+            }
+        }
+        
+        // Управление игроком
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            if (e.key === ' ' || e.key === 'ArrowUp') {
+                if (player.isOnGround && gameRunning) {
+                    player.velocityY = player.jumpPower;
+                    player.isJumping = true;
+                    player.isOnGround = false;
+                }
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // Обработка непрерывного нажатия клавиш
+        function handleInput() {
+            player.velocityX = 0;
+            
+            if (keys['ArrowLeft'] || keys['a'] || keys['ф']) {
+                player.velocityX = -player.speed;
+            }
+            
+            if (keys['ArrowRight'] || keys['d'] || keys['в']) {
+                player.velocityX = player.speed;
+            }
+        }
+        
+        // Оптимизированный игровой цикл
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+            
+            // Ограничение FPS для оптимизации
+            const deltaTime = timestamp - lastTime;
+            if (deltaTime < 16) { // ~60 FPS
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+            lastTime = timestamp;
+            
+            handleInput();
+            update();
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Начало игры
+        function startGame() {
+            score = 0;
+            lives = 3;
+            level = 1;
+            
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
+            levelElement.textContent = level;
+            
+            // Сброс позиций
+            player.x = 100;
+            player.y = gameHeight - 80;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            
+            mario.x = 600;
+            mario.y = gameHeight - 90;
+            mario.speed = 2;
+            mario.direction = -1;
+            mario.jumpTimer = 0;
+            
+            // Создание игрового мира
+            createPlatforms();
+            createCoins();
+            createBirds();
+            
+            // Запуск игры
+            gameRunning = true;
+            gameOverScreen.style.display = 'none';
+            startButton.textContent = "ПАУЗА";
+            
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Пауза/продолжение игры
+        function togglePause() {
+            if (!gameRunning && score > 0) {
+                gameRunning = true;
+                startButton.textContent = "ПАУЗА";
+                lastTime = performance.now();
+                requestAnimationFrame(gameLoop);
+            } else if (gameRunning) {
+                gameRunning = false;
+                startButton.textContent = "ПРОДОЛЖИТЬ";
+            }
+        }
+        
+        // Конец игры
+        function endGame() {
+            gameRunning = false;
+            finalScoreElement.textContent = score;
+            gameOverScreen.style.display = 'flex';
+            startButton.textContent = "НАЧАТЬ ИГРУ";
+        }
+        
+        // Обработчики событий
+        startButton.addEventListener('click', () => {
+            if (!gameRunning && score === 0) {
+                startGame();
+            } else {
+                togglePause();
+            }
+        });
+        
+        restartButton.addEventListener('click', () => {
+            startGame();
+        });
+        
+        // Инициализация игры
+        createSprites(); // Создаем спрайты один раз при загрузке
+        createBirds();
+        render();
+        
+        // Инструкция по управлению
+        console.log("Управление в игре:");
+        console.log("Стрелки влево/вправо - движение");
+        console.log("Пробел или стрелка вверх - прыжок");
+        console.log("Цель: прыгать на Марио и собирать монетки!");
+    </script>
+</body>
+</html>
